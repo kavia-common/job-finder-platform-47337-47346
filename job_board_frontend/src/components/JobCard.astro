@@ -1,0 +1,36 @@
+---
+import type { Job } from '../lib/types';
+import '../styles/theme.css';
+
+export interface Props {
+  job: Job;
+}
+const { job } = Astro.props;
+const date = new Date(job.postedAt);
+const days = Math.max(1, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+const ago = days <= 1 ? 'Today' : `${days}d ago`;
+---
+<article class="job-card" aria-label={`Job card for ${job.title}`}>
+  <div style="display:flex; gap:12px; align-items:center;">
+    {job.logoUrl ? (
+      <img src={job.logoUrl} alt={`${job.company} logo`} width="44" height="44" style="border-radius:10px; object-fit:cover;" loading="lazy" />
+    ) : (
+      <div style="width:44px;height:44px;border-radius:10px;background:var(--gradient-accent);display:grid;place-items:center;color:white;">🏢</div>
+    )}
+    <div style="display:grid; gap:4px;">
+      <strong>{job.title}</strong>
+      <span class="job-meta">{job.company} · {job.location}</span>
+    </div>
+  </div>
+
+  <div class="job-meta">
+    <span class="badge">{job.type}</span>
+    {job.salaryRange && <span class="tag">{job.salaryRange}</span>}
+    <span class="tag">{ago}</span>
+  </div>
+
+  <div class="card-actions">
+    <a class="btn-primary" href={`#job-${job.id}`} aria-label={`View details for ${job.title}`}>Details</a>
+    {job.applyUrl && <a class="link" href={job.applyUrl} target="_blank" rel="noopener">Apply →</a>}
+  </div>
+</article>

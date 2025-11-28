@@ -1,11 +1,25 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import SearchBar from '../components/SearchBar.astro';
+import JobList from '../components/JobList.astro';
+import { getJobsFromMock } from '../lib/mockData';
+import { getPublicEnv } from '../lib/types';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Potential future API usage (not required now). We read PUBLIC_API_BASE without breaking if absent.
+const env = getPublicEnv();
+
+// Load jobs from mock for now.
+// In a future enhancement, if env.PUBLIC_API_BASE is present and stable, we can fetch here instead.
+const jobs = await getJobsFromMock();
 ---
-
-<Layout>
-	<Welcome />
+<Layout title="Ocean Jobs — Find your next role">
+  <Header />
+  <main class="container" style="display:grid; gap: 16px; margin-top: 16px;">
+    <SearchBar />
+    <JobList jobs={jobs} />
+  </main>
+  <footer class="footer">
+    © {new Date().getFullYear()} Ocean Jobs. All rights reserved.
+  </footer>
 </Layout>

@@ -1,0 +1,164 @@
+---
+import type { Job } from '../lib/types';
+import '../styles/theme.css';
+import JobCard from './JobCard.astro';
+
+export interface Props {
+  jobs: Job[];
+}
+const { jobs } = Astro.props;
+---
+<section id="jobs" class="container" aria-label="Job results">
+  <div id="list" class="job-grid">
+    {jobs.map((j) => <JobCard job={j} />)}
+  </div>
+</section>
+
+<script>
+  // Client-side filtering and detail panel using hash navigation
+  const state = {
+    all: [] as any[],
+    filtered: [] as any[],
+    filters: { q: '', loc: '', type: 'Any' },
+  };
+
+  const root = document.getElementById('list');
+
+  // Serialize initial jobs from DOM dataset or inline script
+  function parseInitialJobs() {
+    try {
+      const script = document.getElementById('jobs-data');
+      if (script?.textContent) {
+        state.all = JSON.parse(script.textContent);
+        state.filtered = state.all.slice();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  function matches(job, { q, loc, type }) {
+    const qi = q.toLowerCase();
+    const li = loc.toLowerCase();
+    const title = job.title.toLowerCase();
+    const company = job.company.toLowerCase();
+    const location = job.location.toLowerCase();
+    const tags = (job.tags || []).join(' ').toLowerCase();
+
+    const qOk = !q || title.includes(qi) || company.includes(qi) || tags.includes(qi);
+    const lOk = !loc || location.includes(li);
+    const tOk = !type || type === 'Any' || job.type === type;
+    return qOk && lOk && tOk;
+  }
+
+  function render() {
+    if (!root) return;
+    // Simple rerender: build cards as HTML and set innerHTML
+    root.innerHTML = state.filtered.map((job) => {
+      const date = new Date(job.postedAt);
+      const days = Math.max(1, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+      const ago = days <= 1 ? 'Today' : `${days}d ago`;
+      const logo = job.logoUrl
+        ? `<img src="${job.logoUrl}" alt="${job.company} logo" width="44" height="44" style="border-radius:10px;object-fit:cover;" loading="lazy" />`
+        : `<div style="width:44px;height:44px;border-radius:10px;background:var(--gradient-accent);display:grid;place-items:center;color:white;">🏢</div>`;
+      return `
+        <article class="job-card">
+          <div style="display:flex; gap:12px; align-items:center;">
+            ${logo}
+            <div style="display:grid; gap:4px;">
+              <strong>${job.title}</strong>
+              <span class="job-meta">${job.company} · ${job.location}</span>
+            </div>
+          </div>
+          <div class="job-meta">
+            <span class="badge">${job.type}</span>
+            ${job.salaryRange ? `<span class="tag">${job.salaryRange}</span>` : ''}
+            <span class="tag">${ago}</span>
+          </div>
+          <div class="card-actions">
+            <a class="btn-primary" href="#job-${job.id}" aria-label="View details for ${job.title}">Details</a>
+            ${job.applyUrl ? `<a class="link" href="${job.applyUrl}" target="_blank" rel="noopener">Apply →</a>` : ''}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function applyFilters() {
+    state.filtered = state.all.filter((j) => matches(j, state.filters));
+    render();
+  }
+
+  document.addEventListener('filter-change', (e) => {
+    const detail = (e as CustomEvent).detail || {};
+    state.filters = { ...state.filters, ...detail };
+    applyFilters();
+  });
+
+  // Details panel management
+  const detailsRoot = document.getElementById('details-root');
+
+  function renderDetails(id) {
+    if (!detailsRoot) return;
+    const job = state.all.find((j) => String(j.id) === String(id));
+    if (!job) {
+      detailsRoot.innerHTML = `
+        <div class="details-panel">
+          <strong>Job Details</strong>
+          <p class="section-subtitle">Select a job to see more information.</p>
+        </div>`;
+      return;
+    }
+    detailsRoot.innerHTML = `
+      <aside class="details-panel" aria-label="Job details">
+        <div style="display:flex; align-items:center; gap:12px;">
+          ${job.logoUrl ? `<img src="${job.logoUrl}" alt="${job.company} logo" width="40" height="40" style="border-radius:10px;" />` : `<div style="width:40px;height:40px;border-radius:10px;background:var(--gradient-accent);display:grid;place-items:center;color:white;">🏢</div>`}
+          <div>
+            <div style="font-weight:700">${job.title}</div>
+            <div class="job-meta">${job.company} · ${job.location}</div>
+          </div>
+        </div>
+        <div class="job-meta" style="margin-top:10px;">
+          <span class="badge">${job.type}</span>
+          ${job.salaryRange ? `<span class="tag">${job.salaryRange}</span>` : ''}
+        </div>
+        <div style="margin-top:12px; line-height:1.5;">
+          ${job.description}
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+          ${(job.tags || []).map((t) => `<span class="tag">${t}</span>`).join('')}
+        </div>
+        <div class="card-actions" style="margin-top:14px;">
+          ${job.applyUrl ? `<a class="btn-primary" href="${job.applyUrl}" target="_blank" rel="noopener">Apply Now</a>` : ''}
+          <a class="link" href="#">Close</a>
+        </div>
+      </aside>
+    `;
+  }
+
+  function handleHash() {
+    const hash = window.location.hash || '';
+    const m = hash.match(/#job-(.+)$/);
+    if (m) {
+      renderDetails(m[1]);
+    } else {
+      renderDetails(undefined);
+    }
+  }
+
+  window.addEventListener('hashchange', handleHash);
+
+  // init
+  parseInitialJobs();
+  render();
+  handleHash();
+</script>
+
+<!-- Embed serialized jobs for client JS -->
+<script id="jobs-data" type="application/json">
+  {JSON.stringify(Astro.props.jobs)}
+</script>
+
+<div class="container" style="display:grid; grid-template-columns: 1fr; gap:16px; margin-top: 8px;">
+  <div id="details-root"></div>
+</div>

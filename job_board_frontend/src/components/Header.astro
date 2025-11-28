@@ -1,0 +1,22 @@
+---
+import '../styles/theme.css';
+const nav = [
+  { href: '/', label: 'Jobs' },
+  { href: '#', label: 'Companies' },
+  { href: '#', label: 'About' },
+];
+---
+<header class="header">
+  <div class="header-inner container">
+    <a class="brand" href="/">
+      <div class="brand-badge">🌊</div>
+      Ocean Jobs
+    </a>
+    <nav class="nav" aria-label="Main">
+      {nav.map((n) => (
+        <a href={n.href}>{n.label}</a>
+      ))}
+    </nav>
+    <a class="btn-primary" href="#jobs">Browse Jobs</a>
+  </div>
+</header>

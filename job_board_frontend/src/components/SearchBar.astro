@@ -1,0 +1,44 @@
+---
+/**
+ * A search bar with keyword and location inputs and job type select.
+ * Emits a "filter-change" CustomEvent on the document with current filters.
+ */
+import '../styles/theme.css';
+const jobTypes = ['Any', 'Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'];
+---
+<section class="hero container" aria-label="Job search">
+  <h2 class="section-title">Find your next role</h2>
+  <p class="section-subtitle">Search by title, company, location, or filter by type.</p>
+  <div class="search-bar">
+    <input id="q" class="input" type="text" placeholder="Search jobs or companies..." aria-label="Search" />
+    <input id="loc" class="input" type="text" placeholder="Location" aria-label="Location" />
+    <div style="display:flex; gap:8px;">
+      <select id="type" class="select" aria-label="Job type">
+        {jobTypes.map((t) => <option value={t}>{t}</option>)}
+      </select>
+      <button id="apply" class="btn-primary" type="button">Search</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Wire up events to emit a filter-change with current values
+  const q = document.getElementById('q');
+  const loc = document.getElementById('loc');
+  const type = document.getElementById('type');
+  const apply = document.getElementById('apply');
+
+  function emit() {
+    const detail = {
+      q: (q?.value || '').trim(),
+      loc: (loc?.value || '').trim(),
+      type: (type?.value || 'Any'),
+    };
+    document.dispatchEvent(new CustomEvent('filter-change', { detail }));
+  }
+
+  apply?.addEventListener('click', emit);
+  q?.addEventListener('keydown', (e) => { if (e.key === 'Enter') emit(); });
+  loc?.addEventListener('keydown', (e) => { if (e.key === 'Enter') emit(); });
+  type?.addEventListener('change', emit);
+</script>
